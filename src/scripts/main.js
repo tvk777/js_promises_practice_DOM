@@ -12,55 +12,70 @@ const showMessage = (text, className) => {
 
 const firstPromise = (ms) =>
   new Promise((resolve, reject) => {
-    document.addEventListener('click', resolve);
-
-    setTimeout(() => {
-      reject(new Error('rejected'));
+    const timeoutId = setTimeout(() => {
+      reject(new Error('First promise was rejected'));
     }, ms);
+
+    document.addEventListener(
+      'click',
+      (e) => {
+        if (e.button === 0) {
+          clearTimeout(timeoutId);
+          resolve('First promise was resolved');
+        }
+      },
+      { once: true },
+    );
   });
 
 firstPromise(3000)
   .then((text) => {
-    showMessage('First promise was resolved', 'success');
+    showMessage(text, 'success');
   })
-  .catch(() => showMessage('First promise was rejected', 'error'));
+  .catch((e) => showMessage(e.message, 'error'));
 
 const secondPromise = () =>
   new Promise((resolve) => {
-    document.addEventListener('click', resolve);
-    document.addEventListener('contextmenu', resolve);
+    const handler = (e) => {
+      if (e.button === 0 || e.button === 2) {
+        resolve('Second promise was resolved');
+        document.removeEventListener('mousedown', handler);
+      }
+    };
+
+    document.addEventListener('mousedown', handler);
   });
 
-secondPromise()
-  .then(() => {
-    showMessage('Second promise was resolved', 'success');
-  })
-  .catch(() => showMessage('Second promise was rejected', 'error'));
+secondPromise().then((text) => {
+  showMessage(text, 'success');
+});
 
-let leftClick = false;
-let rightClick = false;
+const thirdPromise = () => {
+  let leftClick = false;
+  let rightClick = false;
 
-const thirdPromise = () =>
-  new Promise((resolve) => {
-    document.addEventListener('click', () => {
-      leftClick = true;
+  return new Promise((resolve) => {
+    const handler = (e) => {
+      if (e.button === 0) {
+        leftClick = true;
+      }
+
+      if (e.button === 2) {
+        rightClick = true;
+      }
 
       if (leftClick && rightClick) {
-        resolve();
+        resolve('Third promise was resolved');
+        document.removeEventListener('mousedown', handler);
       }
-    });
+    };
 
-    document.addEventListener('contextmenu', () => {
-      rightClick = true;
-
-      if (leftClick && rightClick) {
-        resolve();
-      }
-    });
+    document.addEventListener('mousedown', handler);
   });
+};
 
 thirdPromise()
-  .then(() => {
-    showMessage('Third promise was resolved', 'success');
+  .then((text) => {
+    showMessage(text, 'success');
   })
   .catch(() => showMessage('Third promise was rejected', 'error'));
